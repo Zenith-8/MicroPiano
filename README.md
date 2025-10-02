@@ -1,8 +1,16 @@
-# MicroPiano
-MicroPiano is an RP2350-based Synthesizer and MIDI controller project under evelopment by ES@P. It features dynamic hot-swappable modules with magnetic pin connectors, and uses a per-key hall-effect system to dynamically determine key press velocity. 
+# MicroPiano 🎹
+**MicroPiano** is an RP2350-based Synthesizer and MIDI controller project under development by ES@P. It features dynamic hot-swappable modules with magnetic pin connectors, and uses a per-key hall-effect system to dynamically determine key press velocity. 
 
 ## Design Components
-**Work in progress!**
+Built as a MIDI keyboard and digital synthesizer, the MicroPiano design features: 
+- Per-key hall effect sensors, using high polling rate to register variable speed key presses
+- Magnetic pogo connectors to allow for octaves to be added and removed when desired
+- MIDI controller and keyboard functionality, compatible with most DAW softwares, cable of outputting multiple notes at once
+- SD Card slot for playback of externally generated waveforms and sounds
+
+---
+
+
 
 ## IDE Setup
 1. As a preliminary this project requires Visual Studio Code (VSCode), CMake (generally included on your OS of choice), and the Raspberry Pi Pico extension, available in VSCode in the 'Extensions' tab. 
@@ -12,3 +20,4 @@ MicroPiano is an RP2350-based Synthesizer and MIDI controller project under evel
 5. If you want to make a project of your own for testing, under the Raspberry Pi Pico Project tab click on `New C/C++ Project` or `New Project from Example` and select all of the boilerplate you wish to use for testing.
 
 ---
+
