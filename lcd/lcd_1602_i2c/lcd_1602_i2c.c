@@ -11,6 +11,11 @@
 #include "pico/binary_info.h"
 #include "malloc.h"
 
+// ADC IMPORTS
+#include "pico/stdlib.h"
+#include "hardware/gpio.h"
+#include "hardware/adc.h"
+
 /* Example code to drive a 16x2 LCD panel via a I2C bridge chip (e.g. PCF8574)
 
    NOTE: The panel must be capable of being driven at 3.3v NOT 5v. The Pico
@@ -145,7 +150,13 @@ int main() {
 
     lcd_init();
 
-    char loaded_message[17] = "Default";
+    // ADC INIT
+    adc_init();
+    adc_gpio_init(26);
+    // Select ADC input 0 (GPIO26)
+    adc_select_input(0);
+
+    char loaded_message[2] = {'0', '\0'}; // stack buffer, safe and writable
 
     // UART Initialisation, RX. Default BAUD Rate 115200
     uart_init(uart0, 115200);
@@ -154,17 +165,38 @@ int main() {
     
     // Init clear LCD
     lcd_clear();
-    lcd_string(loaded_message);
+    // lcd_string(loaded_message);
+
+    // Hall Effect (ADC)
+    char* res_string = malloc(sizeof(char) * 17);
 
     while (1) {
-        // Read from UART put onto displa
-        memset(loaded_message, 0, sizeof(loaded_message));
-        uart_read_blocking(uart0, (uint8_t*) loaded_message, 7);
-        lcd_set_cursor(0, 0);
-        lcd_string(loaded_message);
-        sleep_ms(1000);
+        // UART
+        //=====================================
+        // Read from UART put onto display
+        // if(uart_is_readable(uart0)){
+        //     uart_read_blocking(uart0, loaded_message, sizeof(char));
+        //     lcd_set_cursor(0, 0);
+        //     // lcd_string("2");
+        //     lcd_string(loaded_message);
+        //     sleep_ms(1000);
+        //     lcd_clear();
+        //     sleep_ms(20);  
+        // }
+        // else {
+        //     sleep_ms(50);
+        // }
+        //=====================================
+
+        // ADC - HALL EFFECT
+        const float conversion_factor = 3.3f / (1 << 12);
+        uint16_t result = adc_read();
+        sprintf(res_string, "voltage: %f", result * conversion_factor);
+        lcd_set_cursor(0,0);
+        lcd_string(res_string);
+        sleep_ms(400);
         lcd_clear();
-        sleep_ms(20);
+ 
     }
 #endif
 }
