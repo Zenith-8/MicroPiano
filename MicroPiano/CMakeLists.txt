@@ -28,21 +28,39 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(lcd_1602_i2c C CXX ASM)
+project(MicroPiano C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(lcd_1602_i2c
-        lcd_1602_i2c.c
+add_executable(MicroPiano MicroPiano.c )
+
+pico_set_program_name(MicroPiano "MicroPiano")
+pico_set_program_version(MicroPiano "0.1")
+
+# Generate PIO header
+pico_generate_pio_header(MicroPiano ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+
+# Modify the below lines to enable/disable output over UART/USB
+pico_enable_stdio_uart(MicroPiano 0)
+pico_enable_stdio_usb(MicroPiano 0)
+
+# Add the standard library to the build
+target_link_libraries(MicroPiano
+        pico_stdlib)
+
+# Add the standard include files to the build
+target_include_directories(MicroPiano PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+)
+
+# Add any user requested libraries
+target_link_libraries(MicroPiano 
+        hardware_spi
+        hardware_pio
         )
 
-# pull in common dependencies and additional i2c hardware support
-target_link_libraries(lcd_1602_i2c pico_stdlib hardware_i2c)
+pico_add_extra_outputs(MicroPiano)
 
-# create map/bin/hex file etc.
-pico_add_extra_outputs(lcd_1602_i2c)
-
-# add url via pico_set_program_url

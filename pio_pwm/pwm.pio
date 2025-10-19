@@ -1,0 +1,48 @@
+;
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+;
+; SPDX-License-Identifier: BSD-3-Clause
+;
+
+; Side-set pin 0 is used for tone output (square wave)
+.pio_version 0 // only requires PIO version 0
+
+.program pwm
+.side_set 1 opt
+
+; This PIO program generates a continuous square wave whose half-period
+; (in PIO clock cycles) is provided by the host via the TX FIFO. The
+; half-period value is maintained in X. On each half-cycle boundary we
+; opportunistically pull a new value (noblock) so the host can update
+; frequency at runtime without halting the state machine. The output pin
+; is driven low for X cycles, then high for X cycles, repeating.
+
+init:
+    pull noblock    side 0      ; Load initial/updated half-period into OSR if available
+    mov x, osr      side 0      ; Keep half-period in X (stable if no new data)
+    mov y, x        side 0      ; Initialize counter for first (low) half-cycle
+
+lowloop:
+    jmp y-- lowloop side 0      ; Hold pin low for X cycles
+    pull noblock    side 0      ; Check for updated half-period
+    mov x, osr      side 0
+    mov y, x        side 0
+
+highloop:
+    jmp y-- highloop side 1     ; Hold pin high for X cycles
+    pull noblock    side 1      ; Check for updated half-period
+    mov x, osr      side 1
+    mov y, x        side 1
+    jmp lowloop     side 0
+
+% c-sdk {
+static inline void pwm_program_init(PIO pio, uint sm, uint offset, uint pin) {
+   pio_gpio_init(pio, pin);
+   pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+   pio_sm_config c = pwm_program_get_default_config(offset);
+   sm_config_set_sideset_pins(&c, pin);
+   // Run at full PIO clock speed; host provides half-period in clock cycles
+   sm_config_set_clkdiv(&c, 1.0f);
+   pio_sm_init(pio, sm, offset, &c);
+}
+%}

@@ -28,21 +28,37 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(lcd_1602_i2c C CXX ASM)
+project(pio_uart_rx C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(lcd_1602_i2c
-        lcd_1602_i2c.c
+add_executable(pio_uart_rx)
+
+pico_generate_pio_header(pio_uart_rx ${CMAKE_CURRENT_LIST_DIR}/uart_rx.pio)
+
+target_sources(pio_uart_rx PRIVATE uart_rx.c)
+
+target_link_libraries(pio_uart_rx PRIVATE
+        pico_stdlib
+        pico_multicore
+        hardware_pio
         )
 
-# pull in common dependencies and additional i2c hardware support
-target_link_libraries(lcd_1602_i2c pico_stdlib hardware_i2c)
-
-# create map/bin/hex file etc.
-pico_add_extra_outputs(lcd_1602_i2c)
+pico_add_extra_outputs(pio_uart_rx)
 
 # add url via pico_set_program_url
+
+# Similar to above but uses an interrupt for RX
+add_executable(pio_uart_rx_intr)
+pico_generate_pio_header(pio_uart_rx_intr ${CMAKE_CURRENT_LIST_DIR}/uart_rx.pio)
+target_sources(pio_uart_rx_intr PRIVATE uart_rx_intr.c)
+target_link_libraries(pio_uart_rx_intr PRIVATE
+        pico_stdlib
+        pico_multicore
+        hardware_pio
+        pico_async_context_threadsafe_background
+        )
+pico_add_extra_outputs(pio_uart_rx_intr)

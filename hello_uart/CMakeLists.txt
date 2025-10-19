@@ -17,7 +17,7 @@ else()
 endif()
 set(sdkVersion 2.2.0)
 set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.2.0)
+set(picotoolVersion 2.2.0-a4)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -28,21 +28,21 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(lcd_1602_i2c C CXX ASM)
+project(hello_uart C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(lcd_1602_i2c
-        lcd_1602_i2c.c
+add_executable(hello_uart
+        hello_uart.c
         )
 
-# pull in common dependencies and additional i2c hardware support
-target_link_libraries(lcd_1602_i2c pico_stdlib hardware_i2c)
+# pull in common dependencies
+target_link_libraries(hello_uart pico_stdlib)
 
 # create map/bin/hex file etc.
-pico_add_extra_outputs(lcd_1602_i2c)
+pico_add_extra_outputs(hello_uart)
 
 # add url via pico_set_program_url

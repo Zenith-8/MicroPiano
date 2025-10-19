@@ -28,21 +28,20 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(lcd_1602_i2c C CXX ASM)
+project(pio_pwm C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(lcd_1602_i2c
-        lcd_1602_i2c.c
-        )
+add_executable(pio_pwm)
 
-# pull in common dependencies and additional i2c hardware support
-target_link_libraries(lcd_1602_i2c pico_stdlib hardware_i2c)
+pico_generate_pio_header(pio_pwm ${CMAKE_CURRENT_LIST_DIR}/pwm.pio)
 
-# create map/bin/hex file etc.
-pico_add_extra_outputs(lcd_1602_i2c)
+target_sources(pio_pwm PRIVATE pwm.c)
+
+target_link_libraries(pio_pwm PRIVATE pico_stdlib hardware_pio hardware_clocks)
+pico_add_extra_outputs(pio_pwm)
 
 # add url via pico_set_program_url
