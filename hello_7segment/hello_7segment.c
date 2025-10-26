@@ -97,6 +97,7 @@ void display_char(int digit_pos, const int* pattern, bool show_decimal) {
     }
 }
 
+// The entry!
 void core1_entry() {
     // Display format during voltage mode: X.XXX (digit 0 with decimal, then 3 decimal digits)
     // Position mapping: [0]=ones digit with DP, [1]=tenths, [2]=skip(colon), [3]=hundredths, [4]=thousandths
