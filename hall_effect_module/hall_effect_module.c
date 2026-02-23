@@ -22,8 +22,6 @@
 #define UART_TX_PIN 4
 #define UART_RX_PIN 5
 
-
-
 int main()
 {
     stdio_init_all();
@@ -46,9 +44,6 @@ int main()
     // Set datasheet for more information on function select
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
-    
-    // Use some the various UART functions to send out data
-    // In a default system, printf will also output via the default UART
     
     // Send out a string, with CR/LF conversions
     uart_puts(UART_ID, " Hello, UART!\n");

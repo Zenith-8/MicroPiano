@@ -17,7 +17,7 @@ else()
 endif()
 set(sdkVersion 2.2.0)
 set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.2.0)
+set(picotoolVersion 2.2.0-a4)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -28,21 +28,35 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(blink_simple C CXX ASM)
+project(MultiChannelADC C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(blink_simple
-        blink_simple.c
+add_executable(MultiChannelADC MultiChannelADC.c )
+
+pico_set_program_name(MultiChannelADC "MultiChannelADC")
+pico_set_program_version(MultiChannelADC "0.1")
+
+# Modify the below lines to enable/disable output over UART/USB
+pico_enable_stdio_uart(MultiChannelADC 0)
+pico_enable_stdio_usb(MultiChannelADC 1)
+
+# Add the standard library to the build
+target_link_libraries(MultiChannelADC
+        pico_stdlib)
+
+# Add the standard include files to the build
+target_include_directories(MultiChannelADC PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
 )
 
-# pull in common dependencies
-target_link_libraries(blink_simple pico_stdlib)
+# Add any user requested libraries
+target_link_libraries(MultiChannelADC 
+        hardware_spi
+        )
 
-# create map/bin/hex/uf2 file etc.
-pico_add_extra_outputs(blink_simple)
+pico_add_extra_outputs(MultiChannelADC)
 
-# call pico_set_program_url to set path to example on github, so users can find the source for an example via picotool
