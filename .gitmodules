@@ -1,3 +1,6 @@
 [submodule "sd-card/no-OS-FatFS-SD-SPI-RPi-Pico"]
 	path = sd-card/no-OS-FatFS-SD-SPI-RPi-Pico
 	url = https://github.com/carlk3/no-OS-FatFS-SD-SPI-RPi-Pico.git
+[submodule "can/pico-mcp2515"]
+        path = can/pico-mcp2515
+        url = https://github.com/adamczykpiotr/pico-mcp2515.git
