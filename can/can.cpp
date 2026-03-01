@@ -12,7 +12,7 @@ int main()
 
     mcp2515.reset();
 
-    mcp2515.setBitrate(CAN_125KBPS, MCP_8MHZ);
+    mcp2515.setBitrate(CAN_5KBPS, MCP_8MHZ);
     mcp2515.setNormalMode();
 
 #ifdef SEND
@@ -36,15 +36,16 @@ int main()
     while (true) {
         MCP2515::ERROR error = mcp2515.readMessage(&frame);
         if (error == MCP2515::ERROR_OK) {
+            printf("CAN id: %x", frame.can_id);
             for (int i = 0; i < frame.can_dlc; i++) {
                 printf("%2x ", frame.data[i]);
             }
             printf("\n");
         }
         else {
-            if (error != MCP2515::ERROR_NOMSG) {
+            // if (error != MCP2515::ERROR_NOMSG) {
                 printf("Error recieving message: %d\n", error);
-            }
+            // }
         }
         sleep_ms(1);
     }
