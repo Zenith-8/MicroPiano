@@ -5,8 +5,13 @@
 #include "ili9341.h"
 #include "gfx.h"
 #include "FreeSans24pt7b.h"
+#include "rizzi.h"
 
-int c;
+#ifndef pgm_read_byte
+#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+#endif
+
+int c = 50;
 
 void gpio_callback(uint gpio, uint32_t events) {
     if (events & GPIO_IRQ_EDGE_FALL) {
@@ -15,6 +20,29 @@ void gpio_callback(uint gpio, uint32_t events) {
     }
 }
 
+void draw_volume(int x, int y, int w, int h, int vol) {
+    GFX_drawRect(x, y, w, h, ILI9341_WHITE);
+    GFX_fillRect(x, y, (int) w * (vol / 100.0), h, ILI9341_WHITE);
+}
+
+void drawXBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_t h, uint16_t color) {
+
+  int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
+  uint8_t b = 0;
+
+  for (int16_t j = 0; j < h; j++, y++) {
+    for (int16_t i = 0; i < w; i++) {
+      if (i & 7)
+        b >>= 1;
+      else
+        b = pgm_read_byte(&bitmap[j * byteWidth + i / 8]);
+      // Nearly identical to drawBitmap(), only the bit order
+      // is reversed here (left-to-right = LSB to MSB):
+      if (b & 0x01)
+        GFX_drawPixel(x + i, y, color);
+    }
+  }
+}
 int main()
 {   
     gpio_init(15);
@@ -30,12 +58,25 @@ int main()
 
     GFX_setFont(&FreeSans24pt7b);
 
+
+    int t = 0;
     while (true)
     {
+        t++;
+        t = t % 30;
+        float s = t / 30.0;   
+
         GFX_clearScreen();
         GFX_setCursor(0, 48);
         GFX_printf("Hello GFX!\n%d", c);
+        
+        // Colors in RGB 5/6/5
+        GFX_drawCircle(120, 290 - (s - s*s) * 120 * 4, 30, ILI9341_GREEN);
+        
+        draw_volume(10, 250, 220, 40, c);
+
+        drawXBitmap(10, 50, rizzi_bits, 100, 100, ILI9341_WHITE);
+
         GFX_flush();
-        sleep_ms(16);
     }
 }

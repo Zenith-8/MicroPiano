@@ -37,7 +37,7 @@ add_subdirectory(pico-displayDrivs)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(screen screen.c FreeSans24pt7b.h)
+add_executable(screen screen.c FreeSans24pt7b.h rizzi.h)
 
 pico_set_program_name(screen "screen")
 pico_set_program_version(screen "0.1")
