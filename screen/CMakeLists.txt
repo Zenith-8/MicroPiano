@@ -33,6 +33,8 @@ project(screen C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+add_subdirectory(pico-displayDrivs)
+
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(screen screen.c )
@@ -56,7 +58,8 @@ target_include_directories(screen PRIVATE
 # Add any user requested libraries
 target_link_libraries(screen 
         hardware_spi
+        ili9341
+        gfx
         )
 
 pico_add_extra_outputs(screen)
-
