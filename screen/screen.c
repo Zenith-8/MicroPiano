@@ -1,3 +1,4 @@
+// Library used: https://github.com/tvlad1234/pico-displayDrivs
 #include "pico/stdlib.h"
 
 #include "ili9341.h"
