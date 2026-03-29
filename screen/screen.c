@@ -6,10 +6,8 @@
 #include "gfx.h"
 #include "FreeSans24pt7b.h"
 #include "rizzi.h"
-
-#ifndef pgm_read_byte
-#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
-#endif
+#include "dice.h"
+#include "rizzi_color.h"
 
 int c = 50;
 
@@ -25,6 +23,8 @@ void draw_volume(int x, int y, int w, int h, int vol) {
     GFX_fillRect(x, y, (int) w * (vol / 100.0), h, ILI9341_WHITE);
 }
 
+// Draws a bitmap (1 color) image. Data is from exporting image as .xbm in GIMP, then renaming to .h
+// From: https://github.com/adafruit/Adafruit-GFX-Library/blob/7ab6d09178a75a65b72d26dcbba3ec2f11882366/Adafruit_GFX.cpp#L967
 void drawXBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_t h, uint16_t color) {
 
   int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
@@ -35,14 +35,35 @@ void drawXBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_
       if (i & 7)
         b >>= 1;
       else
-        b = pgm_read_byte(&bitmap[j * byteWidth + i / 8]);
-      // Nearly identical to drawBitmap(), only the bit order
-      // is reversed here (left-to-right = LSB to MSB):
+        b = *(const unsigned char *)(&bitmap[j * byteWidth + i / 8]);
+
       if (b & 0x01)
         GFX_drawPixel(x + i, y, color);
     }
   }
 }
+
+// Draws a color image. Use convert.py tool to get data
+void draw_image(int16_t x, int16_t y, const uint16_t data[], int16_t w, int16_t h) {
+  for (int16_t j = 0; j < h; j++, y++) {
+    for (int16_t i = 0; i < w; i++) {
+      GFX_drawPixel(x + i, y, data[j*w + i]);
+    }
+  }
+}
+
+// Draws a color image, with 1-bit transparency. Use convert.py to get data.
+void draw_image_transparent(int16_t x, int16_t y, const uint16_t data[], const uint8_t alpha_mask[], int16_t w, int16_t h) {
+    for (int16_t j = 0; j < h; j++, y++) {
+        for (int16_t i = 0; i < w; i++) {
+            if ((alpha_mask[(j*w + i) / 8] >> (7 - (j*w + i) % 8)) & 1) {
+                GFX_drawPixel(x + i, y, data[j*w + i]);
+        
+            }
+        }
+    }
+}
+
 int main()
 {   
     gpio_init(15);
@@ -75,7 +96,9 @@ int main()
         
         draw_volume(10, 250, 220, 40, c);
 
-        drawXBitmap(10, 50, rizzi_bits, 100, 100, ILI9341_WHITE);
+        draw_image(10, 100, rizzi_color_data, RIZZI_COLOR_WIDTH, RIZZI_COLOR_HEIGHT);
+
+        draw_image_transparent(10, 50, dice_data, dice_alpha_mask, DICE_WIDTH, DICE_HEIGHT);
 
         GFX_flush();
     }
