@@ -29,18 +29,20 @@ int read_sd()
         printf("File name: %s\n", file_info.fname);
     }
 
-    char line[100];
-    FRESULT result = f_open(&file, "dantheman.txt", FA_READ);
+    // char line[100];
+    // FRESULT result = f_open(&file, "dantheman.txt", FA_READ);
 
-    if(result != FR_OK) {
-        printf("Failed to read file!\n");
-        return 0;
-    }
+    // if(result != FR_OK) {
+    //     printf("Failed to read file!\n");
+    //     return 0;
+    // }
 
-    printf("Contents of file:\n");
-    while (f_gets(line, sizeof(line), &file)) {
-        printf("%s", line);
-    }
+    // printf("Contents of file:\n");
+    // while (f_gets(line, sizeof(line), &file)) {
+    //     printf("%s", line);
+    // }
+
+    
     
     printf("\n");
     f_close(&file);

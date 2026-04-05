@@ -41,22 +41,19 @@ pico_set_program_name(hall_effect_module "hall_effect_module")
 pico_set_program_version(hall_effect_module "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(hall_effect_module 0)
-pico_enable_stdio_usb(hall_effect_module 0)
+pico_enable_stdio_uart(hall_effect_module 1)
+pico_enable_stdio_usb(hall_effect_module 1)
 
-# Add the standard library to the build
+# Link standard libraries to build
 target_link_libraries(hall_effect_module
-        pico_stdlib)
+        pico_stdlib
+        hardware_spi
+)
 
 # Add the standard include files to the build
 target_include_directories(hall_effect_module PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
-
-# Add any user requested libraries
-target_link_libraries(hall_effect_module 
-        hardware_spi
-        )
 
 pico_add_extra_outputs(hall_effect_module)
 
