@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <malloc.h>
+#include <stdint.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/uart.h"
@@ -32,9 +33,7 @@
 //      └───────────────────────────────────────┘
 //      Last Updated: 3.29
 //      Last Update Content: 
-//      
-//      Internal usage and documentation can be found at ...
-
+//     
 
 void uart_setup(uint8_t* can_id) {
     while (uart_is_readable(UART_ID)) {
@@ -44,10 +43,10 @@ void uart_setup(uint8_t* can_id) {
     // Read 1 char from UART, store in can_id
     uart_read_blocking(UART_ID, can_id, 1);
     // Loop through UART retransmissions  
-    // for(int counter = 0; counter < UART_SETUP_RETRIES; counter++) {
+    for(int counter = 0; counter < UART_SETUP_RETRIES; counter++) {
         uart_putc(UART_ID, (*can_id) + 1);
-        // sleep_ms(UART_SLEEP_MS);
-    // }
+        sleep_ms(UART_SLEEP_MS);
+    }
 
     // TODO: Only used for debugging
     if(*can_id != 0) {

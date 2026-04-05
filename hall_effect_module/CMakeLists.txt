@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(hall_effect_module hall_effect_module.c )
+add_executable(hall_effect_module hall_effect_module.cpp )
 
 pico_set_program_name(hall_effect_module "hall_effect_module")
 pico_set_program_version(hall_effect_module "0.1")
