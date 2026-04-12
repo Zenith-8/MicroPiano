@@ -23,7 +23,7 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico2 CACHE STRING "Board type")
+set(PICO_BOARD pico CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(controller_module controller_module.c )
+add_executable(controller_module controller_module.cpp )
 
 pico_set_program_name(controller_module "controller_module")
 pico_set_program_version(controller_module "0.1")
@@ -46,19 +46,15 @@ pico_enable_stdio_usb(controller_module 0)
 
 # Add the standard library to the build
 target_link_libraries(controller_module
-        pico_stdlib)
+        pico_stdlib
+        hardware_spi
+        hardware_i2c
+        hardware_dma)
 
 # Add the standard include files to the build
 target_include_directories(controller_module PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
-
-# Add any user requested libraries
-target_link_libraries(controller_module 
-        hardware_spi
-        hardware_i2c
-        hardware_dma
-        )
 
 pico_add_extra_outputs(controller_module)
 

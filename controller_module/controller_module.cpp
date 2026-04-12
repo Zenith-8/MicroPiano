@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
@@ -40,6 +40,7 @@ char dst[count_of(src)];
 int main()
 {
     stdio_init_all();
+
 
     // SPI initialisation. This example will use SPI at 1MHz.
     spi_init(SPI_PORT, 1000*1000);
@@ -103,12 +104,11 @@ int main()
     // In a default system, printf will also output via the default UART
     
     // Send out a string, with CR/LF conversions
-    uart_puts(UART_ID, " Hello, UART!\n");
+    // uart_puts(UART_ID, " Hello, UART!\n");
     
     // For more examples of UART use see https://github.com/raspberrypi/pico-examples/tree/master/uart
-
     while (true) {
-        printf("Hello, world!\n");
+        uart_puts(UART_ID, "Hello, world!\n");
         sleep_ms(1000);
     }
 }
