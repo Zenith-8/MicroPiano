@@ -1,17 +1,11 @@
 #include <cstdio>
 #include "pico/stdlib.h"
+#include "screen.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
 #include "hardware/dma.h"
 #include "hardware/uart.h"
-
-// Same imports as screen/screen.c (pico-displayDrivs + assets)
-#include "ili9341.h"
-#include "gfx.h"
-#include "FreeSans24pt7b.h"
-#include "rizzi.h"
-#include "dice.h"
-#include "rizzi_color.h"
+#include "pico/multicore.h"
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -43,6 +37,12 @@ char dst[count_of(src)];
 #define UART_TX_PIN 4
 #define UART_RX_PIN 5
 
+void uart_core1() {
+    while(true){
+        uart_puts(UART_ID, "Hello from core 1!\n");
+        sleep_ms(1000);
+    }
+}
 
 
 int main()
@@ -111,12 +111,9 @@ int main()
     // Use some the various UART functions to send out data
     // In a default system, printf will also output via the default UART
     
-    // Send out a string, with CR/LF conversions
-    // uart_puts(UART_ID, " Hello, UART!\n");
+    // UART Second Core Startup
+    multicore_launch_core1(uart_core1);
     
     // For more examples of UART use see https://github.com/raspberrypi/pico-examples/tree/master/uart
-    while (true) {
-        uart_puts(UART_ID, "Hello, world!\n");
-        sleep_ms(1000);
-    }
+    screen_run();
 }

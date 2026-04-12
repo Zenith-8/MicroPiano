@@ -41,6 +41,8 @@ add_subdirectory(pico-displayDrivs)
 
 add_executable(controller_module
         controller_module.cpp
+        screen.cpp
+        screen.h
         include/FreeSans24pt7b.h
         include/rizzi.h
         include/dice.h
@@ -56,7 +58,9 @@ pico_enable_stdio_usb(controller_module 0)
 
 # Add the standard library to the build
 target_link_libraries(controller_module
-        pico_stdlib)
+        pico_stdlib
+        pico_multicore
+        )
 
 # Add any user requested libraries
 target_link_libraries(controller_module
