@@ -5,6 +5,14 @@
 #include "hardware/dma.h"
 #include "hardware/uart.h"
 
+// Same imports as screen/screen.c (pico-displayDrivs + assets)
+#include "ili9341.h"
+#include "gfx.h"
+#include "FreeSans24pt7b.h"
+#include "rizzi.h"
+#include "dice.h"
+#include "rizzi_color.h"
+
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
 // Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
