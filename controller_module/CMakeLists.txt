@@ -37,9 +37,13 @@ pico_sdk_init()
 
 add_subdirectory(pico-displayDrivs)
 
+# FatFs + SD over SPI (no-OS-FatFS-SD-SPI-RPi-Pico)
+add_subdirectory(no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI fatfs_spi_build)
+
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(controller_module
+        hw_config.c
         controller_module.cpp
         screen.cpp
         screen.h
@@ -68,6 +72,7 @@ target_link_libraries(controller_module
         hardware_i2c
         ili9341
         gfx
+        FatFs_SPI
         )
 
 # Add the standard include files to the build
