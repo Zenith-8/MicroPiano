@@ -28,14 +28,31 @@ set(PICO_BOARD pico2 CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
+
+
 project(controller_module C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+add_subdirectory(pico-displayDrivs)
+
+# FatFs + SD over SPI (no-OS-FatFS-SD-SPI-RPi-Pico)
+add_subdirectory(no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI fatfs_spi_build)
+
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(controller_module controller_module.c )
+add_executable(controller_module
+        hw_config.c
+        controller_module.cpp
+        screen.cpp
+        screen.h
+        pico-mcp2515/include/mcp2515/mcp2515.cpp
+        include/FreeSans24pt7b.h
+        include/rizzi.h
+        include/dice.h
+        include/rizzi_color.h
+        )
 
 pico_set_program_name(controller_module "controller_module")
 pico_set_program_version(controller_module "0.1")
@@ -46,19 +63,25 @@ pico_enable_stdio_usb(controller_module 0)
 
 # Add the standard library to the build
 target_link_libraries(controller_module
-        pico_stdlib)
+        pico_stdlib
+        pico_multicore
+        )
+
+# Add any user requested libraries
+target_link_libraries(controller_module
+        hardware_spi
+        hardware_i2c
+        ili9341
+        gfx
+        FatFs_SPI
+        )
 
 # Add the standard include files to the build
 target_include_directories(controller_module PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/include
+        ${CMAKE_CURRENT_LIST_DIR}/pico-mcp2515/include
 )
-
-# Add any user requested libraries
-target_link_libraries(controller_module 
-        hardware_spi
-        hardware_i2c
-        hardware_dma
-        )
 
 pico_add_extra_outputs(controller_module)
 

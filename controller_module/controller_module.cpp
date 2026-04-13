@@ -1,9 +1,14 @@
-#include <stdio.h>
+#include <cstdio>
 #include "pico/stdlib.h"
+#include "screen.h"
 #include "hardware/spi.h"
 #include "hardware/i2c.h"
 #include "hardware/dma.h"
 #include "hardware/uart.h"
+#include "pico/multicore.h"
+#include "pico/stdlib.h"
+#include "ff.h"
+#include "mcp2515/mcp2515.h"
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -32,14 +37,84 @@ char dst[count_of(src)];
 
 // Use pins 4 and 5 for UART1
 // Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
-#define UART_TX_PIN 4
-#define UART_RX_PIN 5
+#define UART_TX_PIN 8
+#define UART_RX_PIN 9
 
+void uart_core1() {
+    while(true){
+        uart_puts(UART_ID, "Hello from core 1!\n");
+        sleep_ms(1000);
+    }
+}
+
+void can_init() {
+    MCP2515 mcp2515(spi0, 17, 19, 16, 18);
+    
+    // ADC Initialization
+
+    mcp2515.reset();
+
+    mcp2515.setBitrate(CAN_5KBPS, MCP_8MHZ);
+    mcp2515.setNormalMode();
+}
+
+// Copied from sd card implementatino, modified to support WAV files
+int read_sd()
+{
+    FATFS fs;
+    FIL file;
+    DIR dir;
+    FILINFO file_info;
+
+    f_mount(&fs, "0:", 0);
+
+    FRESULT fr = f_opendir(&dir, "/");
+    if (fr != FR_OK) {
+        uart_puts(UART_ID, "Error opening directory!\n");
+        return 0;
+    }
+    while (true)
+    {
+        fr = f_readdir(&dir, &file_info);
+        if (fr != FR_OK) {
+            uart_puts(UART_ID, "Error reading directory!\n");
+            return 0;
+        }
+        if (file_info.fname[0] == 0) {
+            break;
+        }
+        uart_puts(UART_ID, "File name: ");
+        uart_puts(UART_ID, file_info.fname);
+        uart_puts(UART_ID, "\n");
+    }
+
+    // char line[100];
+    // FRESULT result = f_open(&file, "dantheman.txt", FA_READ);
+
+    // if(result != FR_OK) {
+    //     printf("Failed to read file!\n");
+    //     return 0;
+    // }
+
+    // printf("Contents of file:\n");
+    // while (f_gets(line, sizeof(line), &file)) {
+    //     printf("%s", line);
+    // }
+
+    
+    
+    printf("\n");
+    f_close(&file);
+
+    return 1;
+
+}
 
 
 int main()
 {
     stdio_init_all();
+
 
     // SPI initialisation. This example will use SPI at 1MHz.
     spi_init(SPI_PORT, 1000*1000);
@@ -99,16 +174,13 @@ int main()
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
     
-    // Use some the various UART functions to send out data
-    // In a default system, printf will also output via the default UART
-    
-    // Send out a string, with CR/LF conversions
-    uart_puts(UART_ID, " Hello, UART!\n");
+    // CAN Bus Initialisation
+    can_init();
+
+    // UART Second Core Startup
+    multicore_launch_core1(uart_core1);
     
     // For more examples of UART use see https://github.com/raspberrypi/pico-examples/tree/master/uart
+    screen_run();
 
-    while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
-    }
 }
