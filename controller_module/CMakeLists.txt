@@ -23,7 +23,7 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico CACHE STRING "Board type")
+set(PICO_BOARD pico2 CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -47,6 +47,7 @@ add_executable(controller_module
         controller_module.cpp
         screen.cpp
         screen.h
+        pico-mcp2515/include/mcp2515/mcp2515.cpp
         include/FreeSans24pt7b.h
         include/rizzi.h
         include/dice.h
@@ -79,6 +80,7 @@ target_link_libraries(controller_module
 target_include_directories(controller_module PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_CURRENT_LIST_DIR}/include
+        ${CMAKE_CURRENT_LIST_DIR}/pico-mcp2515/include
 )
 
 pico_add_extra_outputs(controller_module)

@@ -81,7 +81,6 @@ void screen_run()
 
     GFX_setFont(&FreeSans24pt7b);
 
-
     int t = 0;
     while (true)
     {
