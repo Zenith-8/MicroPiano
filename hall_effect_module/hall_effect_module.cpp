@@ -29,7 +29,7 @@
 #define UART_TX_PIN 4
 #define UART_RX_PIN 5
 
-#define IS_RECEIVER 1
+#define IS_RECEIVER 0
 
 volatile bool send_enable = false;
 volatile uint8_t uart_char = 0;
@@ -69,6 +69,7 @@ volatile uint8_t uart_char = 0;
 void uart_check() {
     if (uart_is_readable(UART_ID)) {
         uint8_t c = uart_getc(UART_ID);
+        
 
         if (c == '\n' || c == '\r') return;
 
@@ -100,16 +101,87 @@ uint16_t mcp3208_read(uint cs_pin, uint8_t channel) {
     tx[1] = (channel & 0x03) << 6;
     tx[2] = 0x00;
 
+    spi_set_baudrate(SPI_PORT, 500 * 1000);  // ADC rate
     gpio_put(cs_pin, 0);
     spi_write_read_blocking(SPI_PORT, tx, rx, 3);
     gpio_put(cs_pin, 1);
+    spi_set_baudrate(SPI_PORT, 1000 * 1000);  // back to CAN rate
 
     return ((rx[1] & 0x0F) << 8) | rx[2];
 }
 
+// Status LED control and init
+#define LED_R 10
+#define LED_G 11
+#define LED_B 12
+
+void rgb_init() {
+    gpio_init(LED_R);
+    gpio_set_dir(LED_R, GPIO_OUT);
+
+    gpio_init(LED_G);
+    gpio_set_dir(LED_G, GPIO_OUT);
+
+    gpio_init(LED_B);
+    gpio_set_dir(LED_B, GPIO_OUT);
+}
+
+void rgb_set(bool r, bool g, bool b) {
+    gpio_put(LED_R, r);
+    gpio_put(LED_G, g);
+    gpio_put(LED_B, b);
+}
+
+typedef enum {
+    STATE_BOOT,
+    STATE_INIT_OK,
+    STATE_IDLE,
+    STATE_ERROR
+} system_state_t;
+
+system_state_t current_state = STATE_BOOT;
+
+void update_led_state() {
+    switch (current_state) {
+        case STATE_BOOT:
+            rgb_set(1, 0, 1); // purple
+            break;
+        case STATE_INIT_OK:
+            rgb_set(0, 0, 1); // blue
+            break;
+        case STATE_IDLE:
+            rgb_set(0, 1, 0); // green
+            break;
+        case STATE_ERROR:
+            rgb_set(1, 0, 0); // red
+            break;
+    }
+}
+
+void flash_color(bool r, bool g, bool b, int duration_ms) {
+    // keep status color
+    bool old_r = gpio_get(LED_R);
+    bool old_g = gpio_get(LED_G);
+    bool old_b = gpio_get(LED_B);
+
+    rgb_set(r, g, b);
+    sleep_ms(duration_ms);
+
+    // recover
+    rgb_set(old_r, old_g, old_b);
+}
+
+
+
+
 int main()
 {
     stdio_init_all();
+
+    // LED status
+    rgb_init();
+    current_state = STATE_BOOT;
+    update_led_state();
 
     sleep_ms(2000);
     printf("System Booting...\n");
@@ -148,10 +220,12 @@ int main()
     MCP2515 mcp2515(SPI_PORT, CAN_CS, PIN_MOSI, PIN_MISO, PIN_SCK);
 
     mcp2515.reset();
-    mcp2515.setBitrate(CAN_5KBPS, MCP_8MHZ);
+    mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
     mcp2515.setNormalMode();
 
     printf("CAN Initialized\n");
+    current_state = STATE_INIT_OK;
+    update_led_state();
 
     // Variable Definitions
     // uint8_t can_id = 0;
@@ -162,8 +236,8 @@ int main()
     // Send out a string, with CR/LF conversions
     sleep_ms(5000);
     printf("Successfully booted up!\n");
-
-
+    current_state = STATE_IDLE;
+    update_led_state();
 
     // with ADC
     if (IS_RECEIVER) {
@@ -174,6 +248,7 @@ int main()
         gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
         gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 
+        bool collecting = false;
         while (true) {
             // USB serial input，through UART to Pico2
             int c = getchar_timeout_us(0);
@@ -184,8 +259,25 @@ int main()
 
             // listen CAN, wait Pico2 response
             can_frame frame;
-            MCP2515::ERROR err = mcp2515.readMessage(&frame);
-            if (err == MCP2515::ERROR_OK) {
+            // MCP2515::ERROR err = mcp2515.readMessage(&frame);
+            while (mcp2515.readMessage(&frame) == MCP2515::ERROR_OK) {
+                 // START
+                if (frame.can_id == 0x200) {
+                    collecting = true;
+                    printf("\n=== NEW FRAME ===\n");
+                    continue;
+                }
+
+                // END
+                if (frame.can_id == 0x201) {
+                    collecting = false;
+                    printf("=== END FRAME ===\n\n");
+                    continue;
+                }
+
+                // wrong data
+                if (!collecting) continue;
+                
                 uint16_t adc_val = (frame.data[0] << 8) | frame.data[1];
                 float voltage = adc_val * 3.3f / 4095.0f;
 
@@ -198,7 +290,7 @@ int main()
                 }
             }
 
-            sleep_ms(10);
+            sleep_ms(1);
         }
     } else {
         printf("Pico2: UART RX + CAN TX Mode\n");
@@ -210,36 +302,63 @@ int main()
         while (true) {
             if (uart_is_readable(UART_ID)) {
                 uint8_t c = uart_getc(UART_ID);
+                if (c != '1') {
+                    continue;
+                }
                 printf("Pico2: UART received '%c'\n", c);
 
-                // two ADC channels
+                can_frame start;
+                start.can_id = 0x200;
+                start.can_dlc = 1;
+                start.data[0] = 0xAA;
+                // mcp2515.sendMessage(&start);
+                // sleep_ms(1);
+                while (mcp2515.sendMessage(&start) != MCP2515::ERROR_OK) {
+                    sleep_us(100);  // wait buffer
+               }
+               sleep_ms(5);
+
+                // two ADC channels - ADC 1
                 for (int ch = 0; ch < NUM_KEYS_PER_ADC; ch++) {
                     uint16_t adc1 = mcp3208_read(CS_ADC1, ch);
-                    uint16_t adc2 = mcp3208_read(CS_ADC2, ch);
+                    printf("Pico2: ADC1_CH%d=%d\n", ch, adc1);
 
-                    printf("Pico2: ADC1_CH%d=%d | ADC2_CH%d=%d\n", ch, adc1, ch, adc2);
-
-                    // ADC1 data, through CAN to Pico1
-                    // CAN ID: 0x300 + channel
                     can_frame frame1;
                     frame1.can_id = 0x300 + ch;
                     frame1.can_dlc = 2;
-                    frame1.data[0] = (adc1 >> 8) & 0xFF;  // high
-                    frame1.data[1] = adc1 & 0xFF;          // low
-                    mcp2515.sendMessage(&frame1);
+                    frame1.data[0] = (adc1 >> 8) & 0xFF;
+                    frame1.data[1] = adc1 & 0xFF;
+                    while (mcp2515.sendMessage(&frame1) != MCP2515::ERROR_OK) sleep_us(200);
+                    sleep_ms(5);  // send message
+                }
 
-                    // ADC2 data
-                    // CAN ID: 0x310 + channel
+                // ADC2
+                for (int ch = 0; ch < NUM_KEYS_PER_ADC; ch++) {
+                    uint16_t adc2 = mcp3208_read(CS_ADC2, ch);
+                    printf("Pico2: ADC2_CH%d=%d\n", ch, adc2);
+
                     can_frame frame2;
                     frame2.can_id = 0x310 + ch;
                     frame2.can_dlc = 2;
                     frame2.data[0] = (adc2 >> 8) & 0xFF;
                     frame2.data[1] = adc2 & 0xFF;
-                    mcp2515.sendMessage(&frame2);
+                    while (mcp2515.sendMessage(&frame2) != MCP2515::ERROR_OK) sleep_us(200);
+                    sleep_ms(5);
                 }
+
+
+                can_frame end;
+                end.can_id = 0x201;
+                end.can_dlc = 1;
+                end.data[0] = 0x55;
+                //mcp2515.sendMessage(&end);
+                while (mcp2515.sendMessage(&end) != MCP2515::ERROR_OK) {
+                    sleep_us(100);  // wait buffer
+               }
+               sleep_ms(5);
             }
 
-            sleep_ms(10);
+            sleep_ms(1);
         }
     }
 
@@ -443,7 +562,6 @@ int main()
     // }
 
 }
-
 
 
 
