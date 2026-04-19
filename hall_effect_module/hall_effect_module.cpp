@@ -29,7 +29,7 @@
 #define UART_TX_PIN 4
 #define UART_RX_PIN 5
 
-#define IS_RECEIVER 0
+#define IS_RECEIVER 1
 
 volatile bool send_enable = false;
 volatile uint8_t uart_char = 0;
@@ -111,6 +111,7 @@ uint16_t mcp3208_read(uint cs_pin, uint8_t channel) {
 }
 
 // Status LED control and init
+// All the colors are estimated, didn't test on PCB yet
 #define LED_R 10
 #define LED_G 11
 #define LED_B 12
@@ -306,6 +307,7 @@ int main()
                     continue;
                 }
                 printf("Pico2: UART received '%c'\n", c);
+                flash_color(1, 1, 0, 30);  // yellow, UART
 
                 can_frame start;
                 start.can_id = 0x200;
@@ -316,12 +318,16 @@ int main()
                 while (mcp2515.sendMessage(&start) != MCP2515::ERROR_OK) {
                     sleep_us(100);  // wait buffer
                }
+               flash_color(1, 1, 1, 20); // white, CAN start
                sleep_ms(5);
+
+               flash_color(0, 1, 1, 40); // cyan, ADC start
 
                 // two ADC channels - ADC 1
                 for (int ch = 0; ch < NUM_KEYS_PER_ADC; ch++) {
                     uint16_t adc1 = mcp3208_read(CS_ADC1, ch);
                     printf("Pico2: ADC1_CH%d=%d\n", ch, adc1);
+                    flash_color(0, 1, 1, 10);  // cyan
 
                     can_frame frame1;
                     frame1.can_id = 0x300 + ch;
@@ -336,6 +342,7 @@ int main()
                 for (int ch = 0; ch < NUM_KEYS_PER_ADC; ch++) {
                     uint16_t adc2 = mcp3208_read(CS_ADC2, ch);
                     printf("Pico2: ADC2_CH%d=%d\n", ch, adc2);
+                    flash_color(0, 1, 1, 10); // cyan
 
                     can_frame frame2;
                     frame2.can_id = 0x310 + ch;
@@ -355,7 +362,8 @@ int main()
                 while (mcp2515.sendMessage(&end) != MCP2515::ERROR_OK) {
                     sleep_us(100);  // wait buffer
                }
-               sleep_ms(5);
+               flash_color(1, 1, 1, 20); // white, CAN end
+               // sleep_ms(5);
             }
 
             sleep_ms(1);
