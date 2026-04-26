@@ -47,11 +47,13 @@ add_executable(controller_module
         controller_module.cpp
         screen.cpp
         screen.h
+        audio_i2s.pio
         pico-mcp2515/include/mcp2515/mcp2515.cpp
         include/FreeSans24pt7b.h
         include/rizzi.h
         include/dice.h
         include/rizzi_color.h
+        include/wav_sample.h
         )
 
 pico_set_program_name(controller_module "controller_module")
@@ -71,6 +73,9 @@ target_link_libraries(controller_module
 target_link_libraries(controller_module
         hardware_spi
         hardware_i2c
+        hardware_dma
+        hardware_pio
+        hardware_clocks
         ili9341
         gfx
         FatFs_SPI
@@ -83,5 +88,6 @@ target_include_directories(controller_module PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/pico-mcp2515/include
 )
 
-pico_add_extra_outputs(controller_module)
+pico_generate_pio_header(controller_module ${CMAKE_CURRENT_LIST_DIR}/audio_i2s.pio)
 
+pico_add_extra_outputs(controller_module)
