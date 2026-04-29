@@ -1,105 +1,97 @@
-// Library used: https://github.com/tvlad1234/pico-displayDrivs
-// Fonts: https://github.com/adafruit/Adafruit-GFX-Library/tree/master/Fonts
+// An example of how to use the UI. Send z, x, and c in stdio to control, outputs all changed states to stdio
+#include <stdio.h>
+
 #include "pico/stdlib.h"
+#include "ui.h"
 
-#include "ili9341.h"
-#include "gfx.h"
-#include "FreeSans24pt7b.h"
-#include "rizzi.h"
-#include "dice.h"
-#include "rizzi_color.h"
+int selected_sample = -1;
 
-int c = 50;
+char* test_1[] = {
+    "123456789012345678901234567890",
+    "Piano",
+    "metal_pipe",
+    "French Horn",
+    "Kazoo",
+    "So",
+    "Many",
+    "Instruments intruments instruments",
+    "The",
+    "Screen",
+    "Overflows",
+    "So",
+    "I",
+    "Can",
+    "Test",
+    "Overflow",
+    "Logic"
+};
 
-void gpio_callback(uint gpio, uint32_t events) {
-    if (events & GPIO_IRQ_EDGE_FALL) {
-        if (gpio == 15) c++;
-        if (gpio == 16) c--;
-    }
+char* test_2[] = {
+    "testing edge cases",
+    "12345678901234",
+    "123456789012345",
+    "1234567890123456",
+    "12345678901234567",
+    "",
+    "!$(^#&)@;></{}[]",
+    "piano",
+    "one more"
+};
+
+void volume_changed(int volume)
+{
+    printf("Volume changed to: %d\n", volume);
 }
 
-void draw_volume(int x, int y, int w, int h, int vol) {
-    GFX_drawRect(x, y, w, h, ILI9341_WHITE);
-    GFX_fillRect(x, y, (int) w * (vol / 100.0), h, ILI9341_WHITE);
+void sample_changed(int sample)
+{
+    selected_sample = sample;
+    printf("Sample changed to: %s\n", test_1[sample]);
 }
 
-// Draws a bitmap (1 color) image. Data is from exporting image as .xbm in GIMP, then renaming to .h
-// From: https://github.com/adafruit/Adafruit-GFX-Library/blob/7ab6d09178a75a65b72d26dcbba3ec2f11882366/Adafruit_GFX.cpp#L967
-void drawXBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_t h, uint16_t color) {
-
-  int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
-  uint8_t b = 0;
-
-  for (int16_t j = 0; j < h; j++, y++) {
-    for (int16_t i = 0; i < w; i++) {
-      if (i & 7)
-        b >>= 1;
-      else
-        b = *(const unsigned char *)(&bitmap[j * byteWidth + i / 8]);
-
-      if (b & 0x01)
-        GFX_drawPixel(x + i, y, color);
-    }
-  }
+void octave_changed(int octave)
+{
+    printf("Octave changed to: %d\n", octave);
 }
 
-// Draws a color image. Use convert.py tool to get data
-void draw_image(int16_t x, int16_t y, const uint16_t data[], int16_t w, int16_t h) {
-  for (int16_t j = 0; j < h; j++, y++) {
-    for (int16_t i = 0; i < w; i++) {
-      GFX_drawPixel(x + i, y, data[j*w + i]);
-    }
-  }
-}
-
-// Draws a color image, with 1-bit transparency. Use convert.py to get data.
-void draw_image_transparent(int16_t x, int16_t y, const uint16_t data[], const uint8_t alpha_mask[], int16_t w, int16_t h) {
-    for (int16_t j = 0; j < h; j++, y++) {
-        for (int16_t i = 0; i < w; i++) {
-            if ((alpha_mask[(j*w + i) / 8] >> (7 - (j*w + i) % 8)) & 1) {
-                GFX_drawPixel(x + i, y, data[j*w + i]);
-        
-            }
-        }
-    }
+SampleList get_sample_list()
+{
+    SampleList sl = {17, selected_sample, test_1};
+    return sl;
 }
 
 int main()
-{   
-    gpio_init(15);
-    gpio_init(16);
-    gpio_set_irq_enabled_with_callback(15, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
-    gpio_set_irq_enabled(16, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
+{
+    ui_init();
 
-    LCD_setPins(20, 17, 21, 18, 19);
+    ui_set_get_sample_list_callback(&get_sample_list);
+    ui_set_sample_changed_callback(&sample_changed);
+    ui_set_volume_changed_callback(&volume_changed);
+    ui_set_octave_changed_callback(&octave_changed);
 
-    LCD_initDisplay();
-    LCD_setRotation(2);
-    GFX_createFramebuf();
+    stdio_init_all();
 
-    GFX_setFont(&FreeSans24pt7b);
-
-
-    int t = 0;
+    ui_update(INPUT_NONE);
+    
     while (true)
     {
-        t++;
-        t = t % 30;
-        float s = t / 30.0;   
-
-        GFX_clearScreen();
-        GFX_setCursor(0, 48);
-        GFX_printf("Hello GFX!\n%d", c);
-        
-        // Colors in RGB 5/6/5
-        GFX_drawCircle(120, 290 - (s - s*s) * 120 * 4, 30, ILI9341_GREEN);
-        
-        draw_volume(10, 250, 220, 40, c);
-
-        draw_image(10, 100, rizzi_color_data, RIZZI_COLOR_WIDTH, RIZZI_COLOR_HEIGHT);
-
-        draw_image_transparent(10, 50, dice_data, dice_alpha_mask, DICE_WIDTH, DICE_HEIGHT);
-
-        GFX_flush();
+        char c;
+        int input;
+        scanf("%c", &c);
+        switch (c) {
+            case 'z':
+                input = INPUT_LEFT;
+                break;
+            case 'x':
+                input = INPUT_RIGHT;
+                break;
+            case 'c':
+                input = INPUT_SELECT;
+                break;
+            default:
+                input = INPUT_NONE;
+                break;
+        }
+        ui_update(input);
     }
 }
